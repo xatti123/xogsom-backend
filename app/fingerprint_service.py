@@ -1,8 +1,5 @@
 from pathlib import Path
 
-import cv2
-import numpy as np
-
 RAW_MATCH_MIN_SCORE = 0.68
 RAW_MATCH_MIN_GOOD_MATCHES = 10
 RAW_MIN_BRIGHTNESS = 20
@@ -10,7 +7,18 @@ RAW_MAX_BRIGHTNESS = 245
 RAW_MIN_SHARPNESS = 8.0
 
 
-def _read_bgr(path: Path) -> np.ndarray:
+def _cv2():
+    import cv2
+    return cv2
+
+
+def _np():
+    import numpy as np
+    return np
+
+
+def _read_bgr(path: Path):
+    cv2 = _cv2()
     image = cv2.imread(str(path), cv2.IMREAD_COLOR)
     if image is None:
         raise ValueError(f"Invalid fingerprint image: {path}")
@@ -18,11 +26,15 @@ def _read_bgr(path: Path) -> np.ndarray:
 
 
 def preprocess_fingerprint_image(input_path: Path, output_path: Path) -> None:
+    cv2 = _cv2()
     image = _read_bgr(input_path)
     cv2.imwrite(str(output_path.with_suffix(".png")), image)
 
 
 def evaluate_fingerprint_quality(processed_path: Path) -> dict:
+    cv2 = _cv2()
+    np = _np()
+
     image = _read_bgr(processed_path.with_suffix(".png"))
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
@@ -47,7 +59,7 @@ def evaluate_fingerprint_quality(processed_path: Path) -> dict:
     }
 
 
-def _crop_center_fingerprint_area(img: np.ndarray) -> np.ndarray:
+def _crop_center_fingerprint_area(img):
     h, w = img.shape[:2]
     x1 = int(w * 0.45)
     x2 = int(w * 0.92)
@@ -60,7 +72,9 @@ def _crop_center_fingerprint_area(img: np.ndarray) -> np.ndarray:
     return cropped
 
 
-def _orb_features_bgr(img: np.ndarray):
+def _orb_features_bgr(img):
+    cv2 = _cv2()
+
     orb = cv2.ORB_create(
         nfeatures=3000,
         scaleFactor=1.2,
@@ -74,7 +88,9 @@ def _orb_features_bgr(img: np.ndarray):
     return keypoints, descriptors
 
 
-def _orb_score(img1: np.ndarray, img2: np.ndarray) -> tuple[float, int]:
+def _orb_score(img1, img2) -> tuple[float, int]:
+    cv2 = _cv2()
+
     kp1, des1 = _orb_features_bgr(img1)
     kp2, des2 = _orb_features_bgr(img2)
 
@@ -86,29 +102,34 @@ def _orb_score(img1: np.ndarray, img2: np.ndarray) -> tuple[float, int]:
 
     good_matches = []
     for pair in knn_matches:
-        if len(pair) < 2:
-            continue
-        m, n = pair
-        if m.distance < 0.75 * n.distance:
-            good_matches.append(m)
+      if len(pair) < 2:
+          continue
+      m, n = pair
+      if m.distance < 0.75 * n.distance:
+          good_matches.append(m)
 
     score = min(1.0, len(good_matches) / 40.0)
     return float(score), len(good_matches)
 
 
-def _same_size(img1: np.ndarray, img2: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+def _same_size(img1, img2):
     h = min(img1.shape[0], img2.shape[0])
     w = min(img1.shape[1], img2.shape[1])
     return img1[:h, :w], img2[:h, :w]
 
 
-def _template_score_color(img1: np.ndarray, img2: np.ndarray) -> float:
+def _template_score_color(img1, img2) -> float:
+    cv2 = _cv2()
+
     img1, img2 = _same_size(img1, img2)
     result = cv2.matchTemplate(img1, img2, cv2.TM_CCOEFF_NORMED)
     return float(result[0][0])
 
 
-def _shift_variants(img: np.ndarray):
+def _shift_variants(img):
+    np = _np()
+    cv2 = _cv2()
+
     variants = []
     shifts_x = [-8, -4, 0, 4, 8]
     shifts_y = [-4, 0, 4]
@@ -148,17 +169,7 @@ def compare_fingerprint_images(
         template_score = _template_score_color(registered, probe_variant)
         orb_score, good_matches = _orb_score(registered, probe_variant)
 
-        combined = (
-            (template_score * 0.30)
-            + (orb_score * 0.70)
-        )
-
-        print(
-            "template_score=", template_score,
-            "orb_score=", orb_score,
-            "good_matches=", good_matches,
-            "combined=", combined,
-        )
+        combined = (template_score * 0.30) + (orb_score * 0.70)
 
         if combined > best_score:
             best_score = combined
