@@ -1,10 +1,15 @@
 from pathlib import Path
-from deepface import DeepFace
 
-from app.config import FACE_MODEL_NAME, FACE_DETECTOR_BACKEND, FACE_DISTANCE_THRESHOLD
+from app.config import (
+    FACE_MODEL_NAME,
+    FACE_DETECTOR_BACKEND,
+    FACE_DISTANCE_THRESHOLD,
+)
 
 
 def register_face(face_path: Path) -> dict:
+    from deepface import DeepFace
+
     embedding_objs = DeepFace.represent(
         img_path=str(face_path),
         model_name=FACE_MODEL_NAME,
@@ -22,6 +27,8 @@ def register_face(face_path: Path) -> dict:
 
 
 def verify_face(registered_face_path: Path, probe_face_path: Path) -> dict:
+    from deepface import DeepFace
+
     result = DeepFace.verify(
         img1_path=str(registered_face_path),
         img2_path=str(probe_face_path),
