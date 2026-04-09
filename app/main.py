@@ -1,15 +1,12 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-
-from models import RegisterEmployeeRequest, VerifyEmployeeRequest, ApiResponse
-from storage import employee_key, save_base64_to_file
-from config import (
+from app.models import RegisterEmployeeRequest, VerifyEmployeeRequest, ApiResponse
+from app.storage import employee_key, save_base64_to_file
+from app.config import (
     FACE_DIR,
     FINGERPRINT_RAW_DIR,
     FINGERPRINT_PROCESSED_DIR,
 )
-from face_service import register_face, verify_face
-from fingerprint_service import register_fingerprint, verify_fingerprint
+from app.face_service import register_face, verify_face
+from app.fingerprint_service import register_fingerprint, verify_fingerprint
 
 app = FastAPI(title="Employee Biometric API")
 

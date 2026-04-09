@@ -1,7 +1,7 @@
 from pathlib import Path
 from deepface import DeepFace
 
-from config import FACE_MODEL_NAME, FACE_DETECTOR_BACKEND, FACE_DISTANCE_THRESHOLD
+from app.config import FACE_MODEL_NAME, FACE_DETECTOR_BACKEND, FACE_DISTANCE_THRESHOLD
 
 
 def register_face(face_path: Path) -> dict:
