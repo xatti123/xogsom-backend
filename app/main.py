@@ -1,3 +1,6 @@
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+
 from app.models import RegisterEmployeeRequest, VerifyEmployeeRequest, ApiResponse
 from app.storage import employee_key, save_base64_to_file
 from app.config import (
@@ -29,6 +32,11 @@ app.add_middleware(
 @app.get("/")
 def root():
     return {"ok": True, "message": "Biometric API running"}
+
+
+@app.get("/health")
+def health():
+    return {"status": "healthy"}
 
 
 @app.post("/register-employee", response_model=ApiResponse)
@@ -125,7 +133,7 @@ def verify_employee(payload: VerifyEmployeeRequest):
                 employee_key=key,
             )
 
-        elif payload.biometric_type == "fingerprint":
+        if payload.biometric_type == "fingerprint":
             registered_processed_path = (
                 FINGERPRINT_PROCESSED_DIR / f"{key}_registered_processed.png"
             )
@@ -177,8 +185,7 @@ def verify_employee(payload: VerifyEmployeeRequest):
                 employee_key=key,
             )
 
-        else:
-            raise HTTPException(status_code=400, detail="Invalid biometric type")
+        raise HTTPException(status_code=400, detail="Invalid biometric type")
 
     except HTTPException:
         raise
