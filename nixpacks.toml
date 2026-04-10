@@ -1,8 +1,0 @@
-[phases.setup]
-nixPkgs = [
-  "python311",
-  "libGL",
-  "glib",
-  "gcc",
-  "ffmpeg"
-]
